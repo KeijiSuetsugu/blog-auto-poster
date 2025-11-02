@@ -13,16 +13,21 @@ load_dotenv()
 
 class ArticleGenerator:
     def __init__(self):
-        api_key = os.getenv('OPENAI_API_KEY')
-        if not api_key:
-            raise ValueError("OPENAI_API_KEYを.envファイルに設定してください")
-        
-        # APIキーから余分な空白文字を削除
-        api_key = api_key.strip()
-        
-        # APIキーの形式を確認
+        raw_api_key = os.getenv('OPENAI_API_KEY')
+        if not raw_api_key:
+            raise ValueError("OPENAI_API_KEYが設定されていません。GitHub Secretsを確認してください。")
+
+        # キーの中から'sk-'で始まる部分を探して、そこから後ろを正しいキーとして抜き出す
+        sk_index = raw_api_key.find('sk-')
+        if sk_index != -1:
+            api_key = raw_api_key[sk_index:].strip()
+        else:
+            api_key = raw_api_key.strip()
+
+        # 最終チェック
         if not api_key.startswith(('sk-', 'sk-proj-')):
-            raise ValueError(f"無効なAPIキー形式です。APIキーは'sk-'または'sk-proj-'で始まる必要があります。")
+            error_preview = raw_api_key.replace('\n', ' ').replace('\r', ' ')[0:20]
+            raise ValueError(f"無効なAPIキー形式です。取得したキーの先頭部分: '{error_preview}...'")
         
         if api_key.startswith('sk-proj-'):
             print("⚠️ プロジェクトAPIキーが使用されています。プロジェクトのクォータ設定を確認してください。")
