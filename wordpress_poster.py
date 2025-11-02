@@ -17,7 +17,12 @@ class WordPressPoster:
         # 環境変数を読み込み（.envファイルがあれば読み込むが、なくてもOK）
         load_dotenv()
         
-        self.base_url = os.getenv('WORDPRESS_URL', 'https://freeeeeeestyle.com')
+        self.base_url = os.getenv('WORDPRESS_URL')
+        # 環境変数が空、または不正な場合にデフォルト値を設定
+        if not self.base_url or not self.base_url.startswith(('http://', 'https://')):
+            self.base_url = 'https://freeeeeeestyle.com'
+            print(f"DEBUG: WORDPRESS_URLが未設定または不正なため、デフォルト値 '{self.base_url}' を使用します。")
+
         self.username = os.getenv('WORDPRESS_USERNAME')
         self.password = os.getenv('WORDPRESS_PASSWORD')
         
