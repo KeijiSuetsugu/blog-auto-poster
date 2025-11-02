@@ -48,6 +48,8 @@ jobs:
         WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
+        echo "環境変数の長さを確認:"
+        echo "OPENAI_API_KEY length: ${#OPENAI_API_KEY}"
         python main.py || exit 1
       continue-on-error: false
 

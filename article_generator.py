@@ -17,9 +17,20 @@ class ArticleGenerator:
         if not api_key:
             raise ValueError("OPENAI_API_KEYを.envファイルに設定してください")
         
+        # APIキーから余分な空白文字を削除
+        api_key = api_key.strip()
+        
         # APIキーの形式を確認
+        if not api_key.startswith('sk-'):
+            raise ValueError(f"無効なAPIキー形式です。APIキーは'sk-'で始まる必要があります。")
+        
         if api_key.startswith('sk-proj-'):
             print("⚠️ プロジェクトAPIキーが使用されています。プロジェクトのクォータ設定を確認してください。")
+        
+        # デバッグ用（APIキーの最初と最後の数文字のみ表示）
+        api_key_preview = f"{api_key[:10]}...{api_key[-10:]}" if len(api_key) > 20 else "***"
+        print(f"DEBUG: APIキーの長さ: {len(api_key)}文字")
+        print(f"DEBUG: APIキーのプレビュー: {api_key_preview}")
         
         self.client = OpenAI(api_key=api_key)
         
