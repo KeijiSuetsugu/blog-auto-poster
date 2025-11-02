@@ -13,9 +13,9 @@ load_dotenv()
 
 class ArticleGenerator:
     def __init__(self):
-        api_key = os.getenv('OPENAI_API_KEY', '').strip()
-if not api_key.startswith(('sk-', 'sk-proj-')):
-    raise ValueError("APIキーは sk- または sk-proj- で始まる形式を使用してください。")
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            raise ValueError("OPENAI_API_KEYを.envファイルに設定してください")
         
         # APIキーから余分な空白文字を削除
         api_key = api_key.strip()
