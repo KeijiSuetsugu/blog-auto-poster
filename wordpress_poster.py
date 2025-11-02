@@ -14,12 +14,25 @@ load_dotenv()
 
 class WordPressPoster:
     def __init__(self):
+        # 環境変数を読み込み（.envファイルがあれば読み込むが、なくてもOK）
+        load_dotenv()
+        
         self.base_url = os.getenv('WORDPRESS_URL', 'https://freeeeeeestyle.com')
         self.username = os.getenv('WORDPRESS_USERNAME')
         self.password = os.getenv('WORDPRESS_PASSWORD')
         
+        # デバッグ用：環境変数が設定されているか確認
+        print(f"DEBUG: WORDPRESS_URL={self.base_url}")
+        print(f"DEBUG: WORDPRESS_USERNAME={'存在する' if self.username else '存在しない'}")
+        print(f"DEBUG: WORDPRESS_PASSWORD={'存在する' if self.password else '存在しない'}")
+        
         if not self.username or not self.password:
-            raise ValueError("WORDPRESS_USERNAMEとWORDPRESS_PASSWORDを.envファイルに設定してください")
+            raise ValueError(
+                f"WORDPRESS_USERNAMEとWORDPRESS_PASSWORDを設定してください。\n"
+                f"現在の状態: USERNAME={'設定済み' if self.username else '未設定'}, "
+                f"PASSWORD={'設定済み' if self.password else '未設定'}\n"
+                f"GitHub Actionsを使用している場合、GitHub Secretsを設定してください。"
+            )
         
         # WordPress REST APIのエンドポイント
         self.api_url = f"{self.base_url}/wp-json/wp/v2/posts"
