@@ -21,8 +21,8 @@ if not api_key.startswith(('sk-', 'sk-proj-')):
         api_key = api_key.strip()
         
         # APIキーの形式を確認
-        if not api_key.startswith('sk-'):
-            raise ValueError(f"無効なAPIキー形式です。APIキーは'sk-'で始まる必要があります。")
+        if not api_key.startswith(('sk-', 'sk-proj-')):
+            raise ValueError(f"無効なAPIキー形式です。APIキーは'sk-'または'sk-proj-'で始まる必要があります。")
         
         if api_key.startswith('sk-proj-'):
             print("⚠️ プロジェクトAPIキーが使用されています。プロジェクトのクォータ設定を確認してください。")
@@ -105,7 +105,7 @@ if not api_key.startswith(('sk-', 'sk-proj-')):
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.8,
-                max_tokens=3000  # 2000字程度の記事を生成するため、トークン数を増やす
+                max_tokens=3000
             )
             
             article_text = response.choices[0].message.content.strip()
@@ -119,7 +119,6 @@ if not api_key.startswith(('sk-', 'sk-proj-')):
                 if line.startswith('タイトル:') or line.startswith('タイトル：'):
                     title = line.replace('タイトル:', '').replace('タイトル：', '').strip()
                 elif title is None and line.strip() and not line.strip().startswith('#'):
-                    # タイトルが明確でない場合は最初の行をタイトルとして使用
                     if not title and i == 0:
                         title = line.strip()
                     else:
@@ -127,36 +126,29 @@ if not api_key.startswith(('sk-', 'sk-proj-')):
                 else:
                     content_lines.append(line)
             
-            # タイトルが見つからない場合はテーマを使用
             if not title:
                 title = theme
             
-            # 本文を結合
             content = '\n'.join(content_lines).strip()
             
-            # 本文が空の場合は全体を本文として使用
             if not content:
                 content = article_text
                 if title == theme:
-                    # 最初の行をタイトルとして抽出を試みる
                     first_line = article_text.split('\n')[0]
-                    if len(first_line) < 100:  # タイトルっぽい長さなら
+                    if len(first_line) < 100:
                         title = first_line.strip()
                         content = '\n'.join(article_text.split('\n')[1:]).strip()
             
-            # 本文がHTML形式でない場合は<p>タグで囲む
             if not content.startswith('<'):
                 paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
                 content = '\n\n'.join([f'<p>{p}</p>' for p in paragraphs])
             
-            # 文字数を確認（HTMLタグを除去して純粋なテキストの文字数をカウント）
             plain_text = re.sub(r'<[^>]+>', '', content)
             plain_text_length = len(plain_text.strip())
             print(f"生成された記事の文字数: {plain_text_length}文字")
             
-            # 文字数が足りない場合は補足を追加
             if plain_text_length < 1800:
-                needed_length = max(2000 - plain_text_length, 300)  # 最低300字は追加
+                needed_length = max(2000 - plain_text_length, 300)
                 additional_prompt = f"""上記の記事の続きとして、さらに約{needed_length}字以上の内容を追加してください。
 同じテーマで、以下の点を含めてください：
 - 読者が実践できる具体的なアドバイス
@@ -191,7 +183,6 @@ HTML形式（<p>タグを使用）で出力してください。"""
             error_msg = str(e)
             print(f"記事生成エラー: {error_msg}")
             
-            # APIキーエラーの場合
             if "invalid_api_key" in error_msg or "401" in error_msg or "Incorrect API key" in error_msg:
                 print("\n" + "="*60)
                 print("⚠️  APIキーエラーが発生しました")
@@ -205,7 +196,6 @@ HTML形式（<p>タグを使用）で出力してください。"""
                 print("   - 古いキーが無効化されている可能性があります")
                 print("   - 新しいキーを作成して.envファイルを更新してください")
                 print("="*60 + "\n")
-            # クォータエラーの場合、詳しい説明を表示
             elif "insufficient_quota" in error_msg or "429" in error_msg:
                 print("\n" + "="*60)
                 print("⚠️  OpenAI APIクォータエラーが発生しました")
@@ -244,4 +234,3 @@ if __name__ == "__main__":
     print(f"\nタイトル: {article['title']}\n")
     print(f"本文:\n{article['content']}\n")
     print("="*50)
-
