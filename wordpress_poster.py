@@ -17,11 +17,14 @@ class WordPressPoster:
         # 環境変数を読み込み（.envファイルがあれば読み込むが、なくてもOK）
         load_dotenv()
         
-        self.base_url = os.getenv('WORDPRESS_URL')
+        self.base_url = os.getenv('WORDPRESS_URL', '').strip()
         # 環境変数が空、または不正な場合にデフォルト値を設定
         if not self.base_url or not self.base_url.startswith(('http://', 'https://')):
             self.base_url = 'https://freeeeeeestyle.com'
             print(f"DEBUG: WORDPRESS_URLが未設定または不正なため、デフォルト値 '{self.base_url}' を使用します。")
+        
+        # URLの末尾にスラッシュがある場合は削除
+        self.base_url = self.base_url.rstrip('/')
 
         self.username = os.getenv('WORDPRESS_USERNAME')
         self.password = os.getenv('WORDPRESS_PASSWORD')
@@ -39,8 +42,11 @@ class WordPressPoster:
                 f"GitHub Actionsを使用している場合、GitHub Secretsを設定してください。"
             )
         
-        # WordPress REST APIのエンドポイント
+        # WordPress REST APIのエンドポイント（確実に正しいURLを構築）
+        if not self.base_url.startswith(('http://', 'https://')):
+            raise ValueError(f"無効なWORDPRESS_URL: {self.base_url}")
         self.api_url = f"{self.base_url}/wp-json/wp/v2/posts"
+        print(f"DEBUG: WordPress API URL: {self.api_url}")
         
     def create_post(self, title, content, status='publish'):
         """
