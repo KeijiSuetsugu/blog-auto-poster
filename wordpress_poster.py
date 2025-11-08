@@ -72,6 +72,10 @@ class WordPressPoster:
         }
         
         try:
+            print(f"DEBUG: 投稿URL: {self.api_url}")
+            print(f"DEBUG: ユーザー名: {self.username}")
+            print(f"DEBUG: パスワードの長さ: {len(self.password) if self.password else 0}文字")
+            
             response = requests.post(
                 self.api_url,
                 json=data,
@@ -80,9 +84,34 @@ class WordPressPoster:
                 timeout=30
             )
             
+            print(f"DEBUG: レスポンスステータス: {response.status_code}")
+            
+            if response.status_code == 403:
+                print("\n" + "="*60)
+                print("⚠️  403 Forbidden エラー")
+                print("="*60)
+                print("WordPressの認証が拒否されました。")
+                print("\n考えられる原因:")
+                print("1. アプリケーションパスワードが間違っている")
+                print("2. ユーザー名が間違っている")
+                print("3. WordPressのREST APIが無効になっている")
+                print("4. プラグインがREST APIをブロックしている")
+                print("\n対処方法:")
+                print("1. WordPress管理画面でアプリケーションパスワードを再確認")
+                print("2. GitHub SecretsのWORDPRESS_USERNAMEとWORDPRESS_PASSWORDを確認")
+                print("3. WordPressの設定でREST APIが有効か確認")
+                print("="*60 + "\n")
+                print(f"レスポンス内容: {response.text}")
+            
             response.raise_for_status()
             return response.json()
             
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTPエラー: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"ステータスコード: {e.response.status_code}")
+                print(f"レスポンス内容: {e.response.text}")
+            raise
         except requests.exceptions.RequestException as e:
             print(f"投稿エラー: {e}")
             if hasattr(e, 'response') and e.response is not None:
