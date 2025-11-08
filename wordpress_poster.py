@@ -75,6 +75,7 @@ class WordPressPoster:
             print(f"DEBUG: 投稿URL: {self.api_url}")
             print(f"DEBUG: ユーザー名: {self.username}")
             print(f"DEBUG: パスワードの長さ: {len(self.password) if self.password else 0}文字")
+            print(f"DEBUG: パスワードの先頭4文字: {self.password[:4] if self.password else 'なし'}")
             
             response = requests.post(
                 self.api_url,
@@ -85,6 +86,7 @@ class WordPressPoster:
             )
             
             print(f"DEBUG: レスポンスステータス: {response.status_code}")
+            print(f"DEBUG: レスポンスヘッダー: {dict(response.headers)}")
             
             if response.status_code == 403:
                 print("\n" + "="*60)
@@ -92,16 +94,25 @@ class WordPressPoster:
                 print("="*60)
                 print("WordPressの認証が拒否されました。")
                 print("\n考えられる原因:")
-                print("1. アプリケーションパスワードが間違っている")
-                print("2. ユーザー名が間違っている")
-                print("3. WordPressのREST APIが無効になっている")
-                print("4. プラグインがREST APIをブロックしている")
+                print("1. GitHub ActionsのIPアドレスがブロックされている")
+                print("2. WordPressのセキュリティプラグインがREST APIをブロック")
+                print("3. アプリケーションパスワードの権限不足")
+                print("4. WordPressのユーザー権限が不足している")
                 print("\n対処方法:")
-                print("1. WordPress管理画面でアプリケーションパスワードを再確認")
-                print("2. GitHub SecretsのWORDPRESS_USERNAMEとWORDPRESS_PASSWORDを確認")
-                print("3. WordPressの設定でREST APIが有効か確認")
+                print("1. WordPressのセキュリティ設定を確認")
+                print("2. REST APIへのアクセス制限を確認")
+                print("3. アプリケーションパスワードを再作成")
                 print("="*60 + "\n")
-                print(f"レスポンス内容: {response.text}")
+                
+                # エラー詳細を表示
+                try:
+                    error_json = response.json()
+                    print(f"エラーコード: {error_json.get('code', 'なし')}")
+                    print(f"エラーメッセージ: {error_json.get('message', 'なし')}")
+                    if 'data' in error_json:
+                        print(f"エラーデータ: {error_json['data']}")
+                except:
+                    print(f"レスポンス内容（テキスト）: {response.text}")
             
             response.raise_for_status()
             return response.json()
