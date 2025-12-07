@@ -847,6 +847,17 @@ Style: Modern tech illustration, professional, sleek"""
                 if not title:
                     title = fallback_topic if not latest_news else "最新AI技術の動向"
                 
+                # 本文を結合
+                content = '\n'.join(content_lines).strip()
+                
+                if not content:
+                    content = article_text
+                    if title == fallback_topic:
+                        first_line = article_text.split('\n')[0]
+                        if len(first_line) < 100:
+                            title = first_line.strip()
+                            content = '\n'.join(article_text.split('\n')[1:]).strip()
+                
                 # 重複チェック（厳密版）
                 print(f"\n重複チェック中: {title}")
                 if self._is_duplicate(title, content):
@@ -861,16 +872,6 @@ Style: Modern tech illustration, professional, sleek"""
                         print("⚠️ このまま投稿すると重複の可能性がありますが、続行します。")
                 
                 print(f"✓ 重複なし: 新しい記事として認識されました")
-                
-                content = '\n'.join(content_lines).strip()
-                
-                if not content:
-                    content = article_text
-                    if title == fallback_topic:
-                        first_line = article_text.split('\n')[0]
-                        if len(first_line) < 100:
-                            title = first_line.strip()
-                            content = '\n'.join(article_text.split('\n')[1:]).strip()
                 
                 if not content.startswith('<'):
                     paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
