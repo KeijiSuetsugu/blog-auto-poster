@@ -31,11 +31,18 @@ jobs:
         WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
         WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        IMAGE_SOURCE: ${{ secrets.IMAGE_SOURCE }}
+        UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
       run: |
+        echo "=== 必須環境変数 ==="
         echo "WORDPRESS_URL is set: $([ -z "$WORDPRESS_URL" ] && echo 'NO' || echo 'YES')"
         echo "WORDPRESS_USERNAME is set: $([ -z "$WORDPRESS_USERNAME" ] && echo 'NO' || echo 'YES')"
         echo "WORDPRESS_PASSWORD is set: $([ -z "$WORDPRESS_PASSWORD" ] && echo 'NO' || echo 'YES')"
         echo "OPENAI_API_KEY is set: $([ -z "$OPENAI_API_KEY" ] && echo 'NO' || echo 'YES')"
+        echo ""
+        echo "=== 画像生成設定 ==="
+        echo "IMAGE_SOURCE: ${IMAGE_SOURCE:-'banana (default)'}"
+        echo "UNSPLASH_ACCESS_KEY is set: $([ -z "$UNSPLASH_ACCESS_KEY" ] && echo 'NO' || echo 'YES')"
         if [ -z "$WORDPRESS_USERNAME" ] || [ -z "$WORDPRESS_PASSWORD" ] || [ -z "$OPENAI_API_KEY" ]; then
           echo "ERROR: Required secrets are not set!"
           exit 1
@@ -47,9 +54,13 @@ jobs:
         WORDPRESS_USERNAME: ${{ secrets.WORDPRESS_USERNAME }}
         WORDPRESS_PASSWORD: ${{ secrets.WORDPRESS_PASSWORD }}
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        IMAGE_SOURCE: ${{ secrets.IMAGE_SOURCE }}
+        UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        BANANA_API_KEY: ${{ secrets.BANANA_API_KEY }}
+        NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
       run: |
-        echo "環境変数の長さを確認:"
-        echo "OPENAI_API_KEY length: ${#OPENAI_API_KEY}"
+        echo "=== AI記事自動投稿開始 ==="
+        echo "IMAGE_SOURCE: ${IMAGE_SOURCE:-'banana'}"
         python main.py || exit 1
       continue-on-error: false
 
