@@ -19,8 +19,7 @@ def main():
         run_scheduler()
     else:
         # 即座に投稿
-        debug_mode = '--debug' in sys.argv
-        poster = WordPressPoster(debug=debug_mode)
+        poster = WordPressPoster()
         poster.post_daily_article()
 
 if __name__ == "__main__":
