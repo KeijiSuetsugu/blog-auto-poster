@@ -1,6 +1,7 @@
 """
 WordPress自動投稿スクリプト
-人間関係に関するブログ記事を毎日自動投稿します
+AI関連の最新ニュースを毎日自動投稿します
+アイキャッチ画像のアップロード機能を含みます
 """
 
 import os
@@ -8,6 +9,7 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 from article_generator import generate_article
+from pathlib import Path
 
 # 環境変数を読み込み
 load_dotenv()
@@ -17,11 +19,15 @@ class WordPressPoster:
         # 環境変数を読み込み（.envファイルがあれば読み込むが、なくてもOK）
         load_dotenv()
         
+        print(f"\n{'='*60}")
+        print("🔧 WordPress設定を読み込み中...")
+        print(f"{'='*60}")
+        
         self.base_url = os.getenv('WORDPRESS_URL', '').strip()
         # 環境変数が空、または不正な場合にデフォルト値を設定
         if not self.base_url or not self.base_url.startswith(('http://', 'https://')):
             self.base_url = 'https://freeeeeeestyle.com'
-            print(f"DEBUG: WORDPRESS_URLが未設定または不正なため、デフォルト値 '{self.base_url}' を使用します。")
+            print(f"⚠️ WORDPRESS_URLが未設定のため、デフォルト値を使用: {self.base_url}")
         
         # URLの末尾にスラッシュがある場合は削除
         self.base_url = self.base_url.rstrip('/')
@@ -29,10 +35,10 @@ class WordPressPoster:
         self.username = os.getenv('WORDPRESS_USERNAME')
         self.password = os.getenv('WORDPRESS_PASSWORD')
         
-        # デバッグ用：環境変数が設定されているか確認
-        print(f"DEBUG: WORDPRESS_URL={self.base_url}")
-        print(f"DEBUG: WORDPRESS_USERNAME={'存在する' if self.username else '存在しない'}")
-        print(f"DEBUG: WORDPRESS_PASSWORD={'存在する' if self.password else '存在しない'}")
+        # 設定状況を表示
+        print(f"🌐 WordPress URL: {self.base_url}")
+        print(f"👤 ユーザー名: {'✓ 設定済み' if self.username else '✗ 未設定'}")
+        print(f"🔑 パスワード: {'✓ 設定済み' if self.password else '✗ 未設定'}")
         
         if not self.username or not self.password:
             raise ValueError(
@@ -42,13 +48,78 @@ class WordPressPoster:
                 f"GitHub Actionsを使用している場合、GitHub Secretsを設定してください。"
             )
         
-        # WordPress REST APIのエンドポイント（確実に正しいURLを構築）
+        # WordPress REST APIのエンドポイント
         if not self.base_url.startswith(('http://', 'https://')):
             raise ValueError(f"無効なWORDPRESS_URL: {self.base_url}")
         self.api_url = f"{self.base_url}/wp-json/wp/v2/posts"
-        print(f"DEBUG: WordPress API URL: {self.api_url}")
+        self.media_api_url = f"{self.base_url}/wp-json/wp/v2/media"
+        print(f"📡 API URL: {self.api_url}")
+        print(f"{'='*60}\n")
+    
+    def upload_media(self, image_path: str, title: str = ""):
+        """
+        WordPressにメディア（画像）をアップロード
         
-    def create_post(self, title, content, status='publish'):
+        Args:
+            image_path: アップロードする画像ファイルのパス
+            title: 画像のタイトル（省略可）
+        
+        Returns:
+            アップロードされたメディアのID、失敗時はNone
+        """
+        try:
+            # ファイルが存在するか確認
+            if not os.path.exists(image_path):
+                print(f"⚠️ 画像ファイルが見つかりません: {image_path}")
+                return None
+            
+            # ファイル名とMIMEタイプを取得
+            file_name = Path(image_path).name
+            mime_type = 'image/jpeg' if image_path.endswith('.jpg') or image_path.endswith('.jpeg') else 'image/png'
+            
+            print(f"画像をアップロード中: {file_name}")
+            
+            # ファイルを読み込み
+            with open(image_path, 'rb') as img_file:
+                files = {
+                    'file': (file_name, img_file, mime_type)
+                }
+                
+                headers = {
+                    'Content-Disposition': f'attachment; filename="{file_name}"'
+                }
+                
+                # タイトルを設定
+                data = {}
+                if title:
+                    data['title'] = title
+                
+                response = requests.post(
+                    self.media_api_url,
+                    files=files,
+                    headers=headers,
+                    data=data,
+                    auth=(self.username, self.password),
+                    timeout=60
+                )
+                
+                print(f"DEBUG: メディアアップロードレスポンスステータス: {response.status_code}")
+                
+                if response.status_code == 201:
+                    media_data = response.json()
+                    media_id = media_data.get('id')
+                    print(f"✓ 画像をアップロードしました (ID: {media_id})")
+                    return media_id
+                else:
+                    print(f"⚠️ 画像アップロード失敗: {response.status_code}")
+                    print(f"レスポンス: {response.text}")
+                    return None
+                    
+        except Exception as e:
+            print(f"⚠️ 画像アップロードエラー: {e}")
+            return None
+        
+    def create_post(self, title, content, status='publish', featured_media_id=None):
         """
         WordPressに記事を投稿
         
@@ -56,6 +127,7 @@ class WordPressPoster:
             title: 記事のタイトル
             content: 記事の本文（HTML形式）
             status: 公開ステータス（'publish', 'draft', 'pending'など）
+            featured_media_id: アイキャッチ画像のメディアID（省略可）
         
         Returns:
             投稿のレスポンス
@@ -70,6 +142,11 @@ class WordPressPoster:
             'status': status,
             'categories': [],  # 必要に応じてカテゴリーIDを指定
         }
+        
+        # アイキャッチ画像を設定
+        if featured_media_id:
+            data['featured_media'] = featured_media_id
+            print(f"アイキャッチ画像を設定: ID {featured_media_id}")
         
         try:
             print(f"DEBUG: 投稿URL: {self.api_url}")
@@ -131,27 +208,56 @@ class WordPressPoster:
     
     def post_daily_article(self):
         """
-        毎日の記事を生成して投稿
+        毎日の記事を生成して投稿（画像付き）
+        4000〜5000字の実用的でユニークなAI記事をBanana Pro Nano画像付きで投稿
         """
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 記事生成を開始します...")
+        print(f"\n{'='*60}")
+        print(f"🚀 AI記事自動投稿開始")
+        print(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"{'='*60}\n")
         
         try:
-            # 記事を生成
-            article_data = generate_article()
+            # 画像ソースを環境変数から取得（デフォルトはbanana）
+            image_source = os.getenv('IMAGE_SOURCE', 'banana')
+            print(f"📝 画像ソース: {image_source}")
+            
+            # 記事を生成（画像も生成）
+            print("\n📰 記事生成を開始します...")
+            article_data = generate_article(image_source=image_source, generate_image=True)
             
             print(f"タイトル: {article_data['title']}")
             print(f"本文の長さ: {len(article_data['content'])}文字")
             
+            # 画像をアップロード
+            featured_media_id = None
+            if 'image_path' in article_data and article_data['image_path']:
+                print("\n画像をWordPressにアップロードします...")
+                featured_media_id = self.upload_media(
+                    image_path=article_data['image_path'],
+                    title=article_data['title']
+                )
+                
+                # 一時ファイルを削除
+                try:
+                    os.unlink(article_data['image_path'])
+                    print(f"一時ファイルを削除しました: {article_data['image_path']}")
+                except Exception as e:
+                    print(f"⚠️ 一時ファイルの削除に失敗: {e}")
+            
             # WordPressに投稿
-            print("WordPressへの投稿を開始します...")
+            print("\nWordPressへの投稿を開始します...")
             result = self.create_post(
                 title=article_data['title'],
                 content=article_data['content'],
-                status='publish'
+                status='publish',
+                featured_media_id=featured_media_id
             )
             
-            print(f"投稿成功！記事ID: {result.get('id')}")
+            print(f"\n✓ 投稿成功！")
+            print(f"記事ID: {result.get('id')}")
             print(f"記事URL: {result.get('link', 'N/A')}")
+            if featured_media_id:
+                print(f"アイキャッチ画像ID: {featured_media_id}")
             
             return result
             
