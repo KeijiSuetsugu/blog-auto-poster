@@ -217,8 +217,8 @@ class WordPressPoster:
         print(f"{'='*60}\n")
         
         try:
-            # 画像ソースを環境変数から取得（デフォルトはbanana）
-            image_source = os.getenv('IMAGE_SOURCE', 'banana')
+            # 画像ソースを環境変数から取得（デフォルトはunsplash - 無料）
+            image_source = os.getenv('IMAGE_SOURCE', 'unsplash')
             print(f"📝 画像ソース: {image_source}")
             
             # 記事を生成（画像も生成）

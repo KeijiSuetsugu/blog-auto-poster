@@ -41,7 +41,7 @@ jobs:
         echo "OPENAI_API_KEY is set: $([ -z "$OPENAI_API_KEY" ] && echo 'NO' || echo 'YES')"
         echo ""
         echo "=== 画像生成設定 ==="
-        echo "IMAGE_SOURCE: ${IMAGE_SOURCE:-'banana (default)'}"
+        echo "IMAGE_SOURCE: ${IMAGE_SOURCE:-'unsplash (default, 無料)'}"
         echo "UNSPLASH_ACCESS_KEY is set: $([ -z "$UNSPLASH_ACCESS_KEY" ] && echo 'NO' || echo 'YES')"
         if [ -z "$WORDPRESS_USERNAME" ] || [ -z "$WORDPRESS_PASSWORD" ] || [ -z "$OPENAI_API_KEY" ]; then
           echo "ERROR: Required secrets are not set!"
@@ -60,7 +60,7 @@ jobs:
         NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
       run: |
         echo "=== AI記事自動投稿開始 ==="
-        echo "IMAGE_SOURCE: ${IMAGE_SOURCE:-'banana'}"
+        echo "IMAGE_SOURCE: ${IMAGE_SOURCE:-'unsplash'}"
         python main.py || exit 1
       continue-on-error: false
 
